@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>NPC Avatar</title>
+<style>
+  body { margin:0; overflow:hidden; background:#000; }
+</style>
+</head>
+<body>
+
+<script type="module">
+
+import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.161/build/three.module.js";
+import { OrbitControls } from "https://cdn.jsdelivr.net/npm/three@0.161/examples/jsm/controls/OrbitControls.js";
+import { GLTFLoader } from "https://cdn.jsdelivr.net/npm/three@0.161/examples/jsm/loaders/GLTFLoader.js";
+
+let scene = new THREE.Scene();
+let camera = new THREE.PerspectiveCamera(35, window.innerWidth/window.innerHeight, 0.1, 1000);
+let renderer = new THREE.WebGLRenderer({ antialias:true });
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setPixelRatio(window.devicePixelRatio);
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+document.body.appendChild(renderer.domElement);
+
+let controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+controls.enablePan = false;
+
+scene.add(new THREE.HemisphereLight(0xffffff,0x444444,1.2));
+let dir = new THREE.DirectionalLight(0xffffff,1.5);
+dir.position.set(3,5,5);
+scene.add(dir);
+
+let mixer;
+let clock = new THREE.Clock();
+let loader = new GLTFLoader();
+
+loader.load("CombatCharacter.glb", (gltf)=>{
+    const model = gltf.scene;
+    scene.add(model);
+
+    const box = new THREE.Box3().setFromObject(model);
+    const size = box.getSize(new THREE.Vector3());
+    const center = box.getCenter(new THREE.Vector3());
+
+    model.position.sub(center);
+
+    const maxDim = Math.max(size.x,size.y,size.z);
+    const fov = camera.fov * (Math.PI/180);
+    let cameraZ = Math.abs(maxDim/2/Math.tan(fov/2));
+
+    camera.position.set(0,size.y*0.6,cameraZ*1.3);
+    controls.target.set(0,size.y*0.6,0);
+    controls.update();
+
+    if(gltf.animations && gltf.animations.length>0){
+        mixer = new THREE.AnimationMixer(model);
+        mixer.clipAction(gltf.animations[0]).play();
+    }
+});
+
+window.addEventListener("resize", ()=>{
+    camera.aspect = window.innerWidth/window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth,window.innerHeight);
+});
+
+function animate(){
+    requestAnimationFrame(animate);
+    if(mixer) mixer.update(clock.getDelta());
+    controls.update();
+    renderer.render(scene,camera);
+}
+animate();
+
+</script>
+</body>
+</html>
