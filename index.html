@@ -41,7 +41,7 @@ const loader = new GLTFLoader();
 loader.register((parser) => new VRMLoaderPlugin(parser));
 
 loader.load(
-  "./1165169894788849444.vrm", // <-- assure-toi que le nom est EXACT
+  "./atest.vrm", // <-- assure-toi que le nom est EXACT
   (gltf) => {
     const vrm = gltf.userData.vrm;
     scene.add(vrm.scene);
