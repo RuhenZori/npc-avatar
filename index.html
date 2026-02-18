@@ -1,94 +1,73 @@
-
 <!DOCTYPE html>
 <html>
 <head>
 <meta charset="UTF-8">
-<title>NPC IA</title>
+<title>VRM Avatar</title>
 <style>
 body {
+  margin: 0;
+  overflow: hidden;
   background: #0f0f0f;
-  color: white;
-  font-family: Arial, sans-serif;
-  text-align: center;
 }
-
-.avatar-container {
-  margin-top: 50px;
-  animation: breathe 4s infinite ease-in-out;
-}
-
-@keyframes breathe {
-  0% { transform: scale(1); }
-  50% { transform: scale(1.04); }
-  100% { transform: scale(1); }
-}
-
-.eye {
-  animation: blink 6s infinite;
-  transform-origin: center;
-}
-
-@keyframes blink {
-  0%, 94%, 100% { transform: scaleY(1); }
-  96% { transform: scaleY(0.1); }
-}
-
-.mouth {
-  transition: height 0.1s ease;
+canvas {
+  display: block;
 }
 </style>
 </head>
-
 <body>
 
-<div class="avatar-container">
-<svg width="220" height="260" viewBox="0 0 220 260">
-  <ellipse cx="110" cy="110" rx="70" ry="80"
-           fill="#1a1a1a"
-           stroke="white"
-           stroke-width="3"/>
+<script type="module">
+import * as THREE from "https://unpkg.com/three@0.155.0/build/three.module.js";
+import { GLTFLoader } from "https://unpkg.com/three@0.155.0/examples/jsm/loaders/GLTFLoader.js";
+import { VRM, VRMLoaderPlugin } from "https://unpkg.com/@pixiv/three-vrm@2.0.0/lib/three-vrm.module.js";
 
-  <ellipse class="eye" cx="80" cy="100" rx="12" ry="18" fill="white"/>
-  <ellipse class="eye" cx="140" cy="100" rx="12" ry="18" fill="white"/>
+const scene = new THREE.Scene();
 
-  <rect id="mouth"
-        class="mouth"
-        x="90"
-        y="155"
-        width="40"
-        height="8"
-        fill="white"
-        rx="4"/>
-</svg>
-</div>
+const camera = new THREE.PerspectiveCamera(35, window.innerWidth/window.innerHeight, 0.1, 100);
+camera.position.set(0, 1.4, 2);
 
-<h2>Analyste Arcanique</h2>
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setSize(window.innerWidth, window.innerHeight);
+document.body.appendChild(renderer.domElement);
 
-<input id="userInput" placeholder="Parle moi...">
-<br>
-<button onclick="speak()">Envoyer</button>
+const light = new THREE.DirectionalLight(0xffffff, 1);
+light.position.set(1, 1, 1);
+scene.add(light);
 
-<script>
-function speak() {
-  const text = document.getElementById("userInput").value;
-  const response = "Je t'écoute. " + text;
+const ambient = new THREE.AmbientLight(0xffffff, 0.4);
+scene.add(ambient);
 
-  const speech = new SpeechSynthesisUtterance(response);
-  speech.lang = "fr-FR";
+const loader = new GLTFLoader();
+loader.register((parser) => new VRMLoaderPlugin(parser));
 
-  const mouth = document.getElementById("mouth");
+loader.load(
+  "./1165169894788849444.vrm", // <-- assure-toi que le nom est EXACT
+  (gltf) => {
+    const vrm = gltf.userData.vrm;
+    scene.add(vrm.scene);
 
-  speech.onstart = () => {
-    mouth.setAttribute("height", "25");
-  };
+    vrm.scene.rotation.y = Math.PI;
+  },
+  undefined,
+  (error) => {
+    console.error(error);
+  }
+);
 
-  speech.onend = () => {
-    mouth.setAttribute("height", "8");
-  };
-
-  window.speechSynthesis.speak(speech);
+function animate() {
+  requestAnimationFrame(animate);
+  renderer.render(scene, camera);
 }
+
+animate();
+
+window.addEventListener("resize", () => {
+  camera.aspect = window.innerWidth/window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+});
 </script>
 
 </body>
 </html>
+
