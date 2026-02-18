@@ -1,3 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>NPC Avatar</title>
+  <style>
+    body {
+      margin: 0;
+      overflow: hidden;
+      background: black;
+    }
+  </style>
+</head>
+<body>
+
+<script type="module">
+
+import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.161/build/three.module.js";
+import { OrbitControls } from "https://cdn.jsdelivr.net/npm/three@0.161/examples/jsm/controls/OrbitControls.js";
+import { GLTFLoader } from "https://cdn.jsdelivr.net/npm/three@0.161/examples/jsm/loaders/GLTFLoader.js";
+
+let scene = new THREE.Scene();
+let camera = new THREE.PerspectiveCamera(60, window.innerWidth/window.innerHeight, 0.1, 1000);
+let renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setSize(window.innerWidth, window.innerHeight);
+document.body.appendChild(renderer.domElement);
+
+let controls = new OrbitControls(camera, renderer.domElement);
+
+let light = new THREE.HemisphereLight(0xffffff, 0x444444, 1.5);
+scene.add(light);
+
+let mixer;
+
+const loader = new GLTFLoader();
+
 loader.load("CombatCharacter.glb", (gltf) => {
 
     const model = gltf.scene;
@@ -7,16 +43,13 @@ loader.load("CombatCharacter.glb", (gltf) => {
     const size = box.getSize(new THREE.Vector3());
     const center = box.getCenter(new THREE.Vector3());
 
-    model.position.x -= center.x;
-    model.position.y -= center.y;
-    model.position.z -= center.z;
+    model.position.sub(center);
 
     const maxDim = Math.max(size.x, size.y, size.z);
     const fov = camera.fov * (Math.PI / 180);
     let cameraZ = Math.abs(maxDim / 2 / Math.tan(fov / 2));
 
-    camera.position.z = cameraZ * 1.5;
-    camera.position.y = size.y * 0.6;
+    camera.position.set(0, size.y * 0.6, cameraZ * 1.5);
 
     controls.target.set(0, size.y / 2, 0);
     controls.update();
@@ -27,3 +60,16 @@ loader.load("CombatCharacter.glb", (gltf) => {
     }
 
 });
+
+function animate() {
+    requestAnimationFrame(animate);
+    if (mixer) mixer.update(0.016);
+    renderer.render(scene, camera);
+}
+
+animate();
+
+</script>
+
+</body>
+</html>
