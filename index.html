@@ -2,12 +2,12 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>VRM Dialogue Mode</title>
+<title>VRM Dialogue</title>
 <style>
 body {
   margin: 0;
   overflow: hidden;
-  background: #0f0f0f;
+  background: #111;
 }
 </style>
 </head>
@@ -19,93 +19,65 @@ body {
 
 <script>
 
-let currentVrm = null;
+let currentVrm;
+let mixer;
 
 const scene = new THREE.Scene();
 
 const camera = new THREE.PerspectiveCamera(
-  35,
+  50, // plus naturel
   window.innerWidth / window.innerHeight,
   0.1,
   100
 );
 
+camera.position.set(0, 1.5, 2.8);
+
 const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setSize(window.innerWidth, window.innerHeight);
 document.body.appendChild(renderer.domElement);
+
+scene.add(new THREE.AmbientLight(0xffffff, 0.8));
 
 const light = new THREE.DirectionalLight(0xffffff, 1);
 light.position.set(1, 1, 1);
 scene.add(light);
 
-scene.add(new THREE.AmbientLight(0xffffff, 0.7));
-
 const loader = new THREE.GLTFLoader();
 
-loader.load(
-  './atest.vrm',
-  function (gltf) {
+loader.load('./atest.vrm', (gltf) => {
 
-    THREE.VRM.from(gltf).then(function (vrm) {
+  THREE.VRM.from(gltf).then((vrm) => {
 
-      currentVrm = vrm;
-      scene.add(vrm.scene);
+    currentVrm = vrm;
+    scene.add(vrm.scene);
+    vrm.scene.rotation.y = Math.PI;
 
-      vrm.scene.rotation.y = Math.PI;
+    // centrage automatique propre
+    const box = new THREE.Box3().setFromObject(vrm.scene);
+    const center = box.getCenter(new THREE.Vector3());
+    vrm.scene.position.sub(center);
 
-      // 🔥 Pose naturelle bras relâchés
-      const leftArm = vrm.humanoid.getBoneNode(THREE.VRMSchema.HumanoidBoneName.LeftUpperArm);
-      const rightArm = vrm.humanoid.getBoneNode(THREE.VRMSchema.HumanoidBoneName.RightUpperArm);
+    vrm.scene.position.y = 0;
 
-      if (leftArm) leftArm.rotation.z = 0.5;
-      if (rightArm) rightArm.rotation.z = -0.5;
+    // caméra regarde centre
+    camera.lookAt(0, 1.4, 0);
 
-      // 🔥 Cadrage tête dialogue
-      const head = vrm.humanoid.getBoneNode(THREE.VRMSchema.HumanoidBoneName.Head);
+    console.log("VRM ready");
 
-      if (head) {
+  });
 
-        const headPos = new THREE.Vector3();
-        head.getWorldPosition(headPos);
-
-        vrm.scene.position.set(0, -headPos.y + 1.4, 0);
-
-        camera.position.set(0, 1.4, 1.2);
-        camera.lookAt(0, 1.4, 0);
-      }
-
-      console.log("VRM prêt");
-    });
-
-  },
-  undefined,
-  function (error) {
-    console.error(error);
-  }
-);
+});
 
 const clock = new THREE.Clock();
 
 function animate() {
-
   requestAnimationFrame(animate);
 
   const delta = clock.getDelta();
 
   if (currentVrm) {
-
     currentVrm.update(delta);
-
-    const t = clock.elapsedTime;
-
-    // respiration subtile
-    currentVrm.scene.position.y += Math.sin(t * 1.5) * 0.002;
-
-    // léger mouvement tête
-    const neck = currentVrm.humanoid.getBoneNode(THREE.VRMSchema.HumanoidBoneName.Neck);
-    if (neck) {
-      neck.rotation.y = Math.sin(t * 0.5) * 0.05;
-    }
   }
 
   renderer.render(scene, camera);
@@ -113,13 +85,6 @@ function animate() {
 
 animate();
 
-window.addEventListener('resize', function () {
-  camera.aspect = window.innerWidth / window.innerHeight;
-  camera.updateProjectionMatrix();
-  renderer.setSize(window.innerWidth, window.innerHeight);
-});
-
 </script>
-
 </body>
 </html>
