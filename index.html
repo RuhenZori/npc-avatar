@@ -46,5 +46,52 @@ const clock = new THREE.Clock();
 const loader = new GLTFLoader();
 loader.load("./CombatCharacter.glb", (gltf) => {
 
-    const model = gltf.scen
+    const model = gltf.scene;
+    scene.add(model);
+
+    // Centrer le modèle
+    const box = new THREE.Box3().setFromObject(model);
+    const center = box.getCenter(new THREE.Vector3());
+    model.position.sub(center);
+
+    // Ajuster taille si trop grand
+    const size = box.getSize(new THREE.Vector3()).length();
+    const scale = 2 / size;
+    model.scale.setScalar(scale);
+
+    // Animation si présente
+    if (gltf.animations.length > 0) {
+        mixer = new THREE.AnimationMixer(model);
+        mixer.clipAction(gltf.animations[0]).play();
+    }
+
+    console.log("GLB chargé ✔");
+
+}, undefined, (error) => {
+    console.error(error);
+});
+
+function animate() {
+    requestAnimationFrame(animate);
+
+    if (mixer) {
+        mixer.update(clock.getDelta());
+    }
+
+    renderer.render(scene, camera);
+}
+
+animate();
+
+window.addEventListener("resize", () => {
+    camera.aspect = window.innerWidth/window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+});
+
+</script>
+
+</body>
+</html>
+
 
