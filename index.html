@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>VRM Dialogue</title>
+<title>VRM Full Body Idle</title>
 <style>
 body {
   margin: 0;
@@ -21,17 +21,18 @@ body {
 
 let currentVrm;
 let mixer;
+const clock = new THREE.Clock();
 
 const scene = new THREE.Scene();
 
 const camera = new THREE.PerspectiveCamera(
-  50, // plus naturel
+  45,
   window.innerWidth / window.innerHeight,
   0.1,
   100
 );
 
-camera.position.set(0, 1.5, 2.8);
+camera.position.set(0, 1.4, 3.5);
 
 const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setSize(window.innerWidth, window.innerHeight);
@@ -51,27 +52,54 @@ loader.load('./atest.vrm', (gltf) => {
 
     currentVrm = vrm;
     scene.add(vrm.scene);
+
     vrm.scene.rotation.y = Math.PI;
 
-    // centrage automatique propre
+    // 🔥 Centrage automatique corps entier
     const box = new THREE.Box3().setFromObject(vrm.scene);
     const center = box.getCenter(new THREE.Vector3());
     vrm.scene.position.sub(center);
-
     vrm.scene.position.y = 0;
 
-    // caméra regarde centre
-    camera.lookAt(0, 1.4, 0);
+    camera.lookAt(0, 1.2, 0);
 
-    console.log("VRM ready");
+    // 🔥 Animation Mixer
+    mixer = new THREE.AnimationMixer(vrm.scene);
+
+    const times = [0, 2];
+
+    const neck = vrm.humanoid.getBoneNode(
+      THREE.VRMSchema.HumanoidBoneName.Neck
+    );
+
+    if (neck) {
+
+      const values = [
+        0, 0, 0,
+        0, 0.1, 0
+      ];
+
+      const track = new THREE.VectorKeyframeTrack(
+        neck.name + '.rotation',
+        times,
+        values
+      );
+
+      const clip = new THREE.AnimationClip('idle', -1, [track]);
+
+      const action = mixer.clipAction(clip);
+      action.setLoop(THREE.LoopPingPong);
+      action.play();
+    }
+
+    console.log("VRM animé");
 
   });
 
 });
 
-const clock = new THREE.Clock();
-
 function animate() {
+
   requestAnimationFrame(animate);
 
   const delta = clock.getDelta();
@@ -80,11 +108,22 @@ function animate() {
     currentVrm.update(delta);
   }
 
+  if (mixer) {
+    mixer.update(delta);
+  }
+
   renderer.render(scene, camera);
 }
 
 animate();
 
+window.addEventListener('resize', () => {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+});
+
 </script>
+
 </body>
 </html>
