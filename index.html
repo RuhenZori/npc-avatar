@@ -1,9 +1,9 @@
+
 <!DOCTYPE html>
 <html>
 <head>
 <meta charset="UTF-8">
 <title>NPC IA</title>
-
 <style>
 body {
   background: #0f0f0f;
@@ -24,4 +24,71 @@ body {
 }
 
 .eye {
-  animation:
+  animation: blink 6s infinite;
+  transform-origin: center;
+}
+
+@keyframes blink {
+  0%, 94%, 100% { transform: scaleY(1); }
+  96% { transform: scaleY(0.1); }
+}
+
+.mouth {
+  transition: height 0.1s ease;
+}
+</style>
+</head>
+
+<body>
+
+<div class="avatar-container">
+<svg width="220" height="260" viewBox="0 0 220 260">
+  <ellipse cx="110" cy="110" rx="70" ry="80"
+           fill="#1a1a1a"
+           stroke="white"
+           stroke-width="3"/>
+
+  <ellipse class="eye" cx="80" cy="100" rx="12" ry="18" fill="white"/>
+  <ellipse class="eye" cx="140" cy="100" rx="12" ry="18" fill="white"/>
+
+  <rect id="mouth"
+        class="mouth"
+        x="90"
+        y="155"
+        width="40"
+        height="8"
+        fill="white"
+        rx="4"/>
+</svg>
+</div>
+
+<h2>Analyste Arcanique</h2>
+
+<input id="userInput" placeholder="Parle moi...">
+<br>
+<button onclick="speak()">Envoyer</button>
+
+<script>
+function speak() {
+  const text = document.getElementById("userInput").value;
+  const response = "Je t'écoute. " + text;
+
+  const speech = new SpeechSynthesisUtterance(response);
+  speech.lang = "fr-FR";
+
+  const mouth = document.getElementById("mouth");
+
+  speech.onstart = () => {
+    mouth.setAttribute("height", "25");
+  };
+
+  speech.onend = () => {
+    mouth.setAttribute("height", "8");
+  };
+
+  window.speechSynthesis.speak(speech);
+}
+</script>
+
+</body>
+</html>
