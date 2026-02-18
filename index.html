@@ -2,72 +2,37 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>VRM Avatar</title>
+<title>Test 3D</title>
 <style>
-body {
-  margin: 0;
-  overflow: hidden;
-  background: #0f0f0f;
-}
-canvas {
-  display: block;
-}
+body { margin: 0; overflow: hidden; background: black; }
 </style>
 </head>
 <body>
 
-<script type="module">
-import * as THREE from "https://unpkg.com/three@0.155.0/build/three.module.js";
-import { GLTFLoader } from "https://unpkg.com/three@0.155.0/examples/jsm/loaders/GLTFLoader.js";
-import { VRM, VRMLoaderPlugin } from "https://unpkg.com/@pixiv/three-vrm@2.0.0/lib/three-vrm.module.js";
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 
+<script>
 const scene = new THREE.Scene();
-
-const camera = new THREE.PerspectiveCamera(35, window.innerWidth/window.innerHeight, 0.1, 100);
-camera.position.set(0, 1.4, 2);
-
-const renderer = new THREE.WebGLRenderer({ antialias: true });
+const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
+const renderer = new THREE.WebGLRenderer();
 renderer.setSize(window.innerWidth, window.innerHeight);
 document.body.appendChild(renderer.domElement);
 
-const light = new THREE.DirectionalLight(0xffffff, 1);
-light.position.set(1, 1, 1);
-scene.add(light);
+const geometry = new THREE.BoxGeometry();
+const material = new THREE.MeshBasicMaterial({ color: 0xffffff });
+const cube = new THREE.Mesh(geometry, material);
+scene.add(cube);
 
-const ambient = new THREE.AmbientLight(0xffffff, 0.4);
-scene.add(ambient);
-
-const loader = new GLTFLoader();
-loader.register((parser) => new VRMLoaderPlugin(parser));
-
-loader.load(
-  "./atest.vrm", // <-- assure-toi que le nom est EXACT
-  (gltf) => {
-    const vrm = gltf.userData.vrm;
-    scene.add(vrm.scene);
-
-    vrm.scene.rotation.y = Math.PI;
-  },
-  undefined,
-  (error) => {
-    console.error(error);
-  }
-);
+camera.position.z = 2;
 
 function animate() {
   requestAnimationFrame(animate);
+  cube.rotation.x += 0.01;
+  cube.rotation.y += 0.01;
   renderer.render(scene, camera);
 }
-
 animate();
-
-window.addEventListener("resize", () => {
-  camera.aspect = window.innerWidth/window.innerHeight;
-  camera.updateProjectionMatrix();
-  renderer.setSize(window.innerWidth, window.innerHeight);
-});
 </script>
 
 </body>
 </html>
-
