@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>VRM Dialogue</title>
+<title>VRM Dialogue Mode</title>
 <style>
 body {
   margin: 0;
@@ -38,8 +38,7 @@ const light = new THREE.DirectionalLight(0xffffff, 1);
 light.position.set(1, 1, 1);
 scene.add(light);
 
-const ambient = new THREE.AmbientLight(0xffffff, 0.7);
-scene.add(ambient);
+scene.add(new THREE.AmbientLight(0xffffff, 0.7));
 
 const loader = new THREE.GLTFLoader();
 
@@ -54,21 +53,28 @@ loader.load(
 
       vrm.scene.rotation.y = Math.PI;
 
-      // 🔥 CENTRAGE AUTOMATIQUE
-      const box = new THREE.Box3().setFromObject(vrm.scene);
-      const size = box.getSize(new THREE.Vector3());
-      const center = box.getCenter(new THREE.Vector3());
+      // 🔥 Pose naturelle bras relâchés
+      const leftArm = vrm.humanoid.getBoneNode(THREE.VRMSchema.HumanoidBoneName.LeftUpperArm);
+      const rightArm = vrm.humanoid.getBoneNode(THREE.VRMSchema.HumanoidBoneName.RightUpperArm);
 
-      vrm.scene.position.x += (vrm.scene.position.x - center.x);
-      vrm.scene.position.y += (vrm.scene.position.y - center.y);
-      vrm.scene.position.z += (vrm.scene.position.z - center.z);
+      if (leftArm) leftArm.rotation.z = 0.5;
+      if (rightArm) rightArm.rotation.z = -0.5;
 
-      // 🔥 CAMERA ADAPTÉE
-      const height = size.y;
-      camera.position.set(0, height * 0.6, height * 1.5);
-      camera.lookAt(0, height * 0.6, 0);
+      // 🔥 Cadrage tête dialogue
+      const head = vrm.humanoid.getBoneNode(THREE.VRMSchema.HumanoidBoneName.Head);
 
-      console.log("VRM chargé et centré");
+      if (head) {
+
+        const headPos = new THREE.Vector3();
+        head.getWorldPosition(headPos);
+
+        vrm.scene.position.set(0, -headPos.y + 1.4, 0);
+
+        camera.position.set(0, 1.4, 1.2);
+        camera.lookAt(0, 1.4, 0);
+      }
+
+      console.log("VRM prêt");
     });
 
   },
@@ -92,8 +98,14 @@ function animate() {
 
     const t = clock.elapsedTime;
 
-    // respiration légère
+    // respiration subtile
     currentVrm.scene.position.y += Math.sin(t * 1.5) * 0.002;
+
+    // léger mouvement tête
+    const neck = currentVrm.humanoid.getBoneNode(THREE.VRMSchema.HumanoidBoneName.Neck);
+    if (neck) {
+      neck.rotation.y = Math.sin(t * 0.5) * 0.05;
+    }
   }
 
   renderer.render(scene, camera);
