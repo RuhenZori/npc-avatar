@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>VRM Full Body Idle</title>
+<title>VRM Full Body Idle Real</title>
 <style>
 body {
   margin: 0;
@@ -55,7 +55,6 @@ loader.load('./atest.vrm', (gltf) => {
 
     vrm.scene.rotation.y = Math.PI;
 
-    // 🔥 Centrage automatique corps entier
     const box = new THREE.Box3().setFromObject(vrm.scene);
     const center = box.getCenter(new THREE.Vector3());
     vrm.scene.position.sub(center);
@@ -63,10 +62,8 @@ loader.load('./atest.vrm', (gltf) => {
 
     camera.lookAt(0, 1.2, 0);
 
-    // 🔥 Animation Mixer
+    // 🔥 Animation réelle via Quaternion
     mixer = new THREE.AnimationMixer(vrm.scene);
-
-    const times = [0, 2];
 
     const neck = vrm.humanoid.getBoneNode(
       THREE.VRMSchema.HumanoidBoneName.Neck
@@ -74,25 +71,39 @@ loader.load('./atest.vrm', (gltf) => {
 
     if (neck) {
 
+      const times = [0, 1, 2];
+
+      const qStart = new THREE.Quaternion().setFromEuler(
+        new THREE.Euler(0, -0.05, 0)
+      );
+
+      const qMid = new THREE.Quaternion().setFromEuler(
+        new THREE.Euler(0, 0.05, 0)
+      );
+
+      const qEnd = new THREE.Quaternion().setFromEuler(
+        new THREE.Euler(0, -0.05, 0)
+      );
+
       const values = [
-        0, 0, 0,
-        0, 0.1, 0
+        qStart.x, qStart.y, qStart.z, qStart.w,
+        qMid.x,   qMid.y,   qMid.z,   qMid.w,
+        qEnd.x,   qEnd.y,   qEnd.z,   qEnd.w
       ];
 
-      const track = new THREE.VectorKeyframeTrack(
-        neck.name + '.rotation',
+      const track = new THREE.QuaternionKeyframeTrack(
+        neck.name + '.quaternion',
         times,
         values
       );
 
-      const clip = new THREE.AnimationClip('idle', -1, [track]);
-
+      const clip = new THREE.AnimationClip('idle', 2, [track]);
       const action = mixer.clipAction(clip);
-      action.setLoop(THREE.LoopPingPong);
+      action.setLoop(THREE.LoopRepeat);
       action.play();
     }
 
-    console.log("VRM animé");
+    console.log("VRM animé correctement");
 
   });
 
