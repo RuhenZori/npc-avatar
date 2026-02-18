@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>VRM Full Body Idle Real</title>
+<title>GLB Animated Character</title>
 <style>
 body {
   margin: 0;
@@ -15,11 +15,9 @@ body {
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@pixiv/three-vrm@0.6.7/lib/three-vrm.js"></script>
 
 <script>
 
-let currentVrm;
 let mixer;
 const clock = new THREE.Clock();
 
@@ -32,7 +30,7 @@ const camera = new THREE.PerspectiveCamera(
   100
 );
 
-camera.position.set(0, 1.4, 3.5);
+camera.position.set(0, 1.5, 3);
 
 const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setSize(window.innerWidth, window.innerHeight);
@@ -41,71 +39,39 @@ document.body.appendChild(renderer.domElement);
 scene.add(new THREE.AmbientLight(0xffffff, 0.8));
 
 const light = new THREE.DirectionalLight(0xffffff, 1);
-light.position.set(1, 1, 1);
+light.position.set(1, 2, 2);
 scene.add(light);
 
 const loader = new THREE.GLTFLoader();
 
-loader.load('./atest.vrm', (gltf) => {
+loader.load('./character.glb', (gltf) => {
 
-  THREE.VRM.from(gltf).then((vrm) => {
+  const model = gltf.scene;
+  scene.add(model);
 
-    currentVrm = vrm;
-    scene.add(vrm.scene);
+  model.position.set(0, 0, 0);
 
-    vrm.scene.rotation.y = Math.PI;
+  // centrage automatique
+  const box = new THREE.Box3().setFromObject(model);
+  const center = box.getCenter(new THREE.Vector3());
+  model.position.sub(center);
+  model.position.y = 0;
 
-    const box = new THREE.Box3().setFromObject(vrm.scene);
-    const center = box.getCenter(new THREE.Vector3());
-    vrm.scene.position.sub(center);
-    vrm.scene.position.y = 0;
+  camera.lookAt(0, 1.2, 0);
 
-    camera.lookAt(0, 1.2, 0);
+  // 🔥 Animation automatique si présente
+  if (gltf.animations.length > 0) {
 
-    // 🔥 Animation réelle via Quaternion
-    mixer = new THREE.AnimationMixer(vrm.scene);
+    mixer = new THREE.AnimationMixer(model);
 
-    const neck = vrm.humanoid.getBoneNode(
-      THREE.VRMSchema.HumanoidBoneName.Neck
-    );
+    gltf.animations.forEach((clip) => {
+      mixer.clipAction(clip).play();
+    });
 
-    if (neck) {
-
-      const times = [0, 1, 2];
-
-      const qStart = new THREE.Quaternion().setFromEuler(
-        new THREE.Euler(0, -0.05, 0)
-      );
-
-      const qMid = new THREE.Quaternion().setFromEuler(
-        new THREE.Euler(0, 0.05, 0)
-      );
-
-      const qEnd = new THREE.Quaternion().setFromEuler(
-        new THREE.Euler(0, -0.05, 0)
-      );
-
-      const values = [
-        qStart.x, qStart.y, qStart.z, qStart.w,
-        qMid.x,   qMid.y,   qMid.z,   qMid.w,
-        qEnd.x,   qEnd.y,   qEnd.z,   qEnd.w
-      ];
-
-      const track = new THREE.QuaternionKeyframeTrack(
-        neck.name + '.quaternion',
-        times,
-        values
-      );
-
-      const clip = new THREE.AnimationClip('idle', 2, [track]);
-      const action = mixer.clipAction(clip);
-      action.setLoop(THREE.LoopRepeat);
-      action.play();
-    }
-
-    console.log("VRM animé correctement");
-
-  });
+    console.log("Animations détectées :", gltf.animations.length);
+  } else {
+    console.log("Aucune animation trouvée");
+  }
 
 });
 
@@ -115,13 +81,7 @@ function animate() {
 
   const delta = clock.getDelta();
 
-  if (currentVrm) {
-    currentVrm.update(delta);
-  }
-
-  if (mixer) {
-    mixer.update(delta);
-  }
+  if (mixer) mixer.update(delta);
 
   renderer.render(scene, camera);
 }
