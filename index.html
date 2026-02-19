@@ -1,24 +1,25 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>GLB Viewer</title>
-  <style>
-    body { margin: 0; overflow: hidden; background: #111; }
-    canvas { display: block; }
-  </style>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>GLB Viewer</title>
+<style>
+  body { margin: 0; overflow: hidden; background: #111; }
+  canvas { display: block; }
+</style>
 </head>
 <body>
 
 <script type="module">
+
 import * as THREE from "https://unpkg.com/three@0.160.0/build/three.module.js";
 import { GLTFLoader } from "https://unpkg.com/three@0.160.0/examples/jsm/loaders/GLTFLoader.js";
 import { OrbitControls } from "https://unpkg.com/three@0.160.0/examples/jsm/controls/OrbitControls.js";
 
-/* ============================= */
-/*  SCENE SETUP                  */
-/* ============================= */
+/* ====================== */
+/* SCENE */
+/* ====================== */
 
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x111111);
@@ -36,27 +37,26 @@ renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.physicallyCorrectLights = true;
 document.body.appendChild(renderer.domElement);
 
-/* ============================= */
-/*  LIGHTING                     */
-/* ============================= */
+/* ====================== */
+/* LIGHTS */
+/* ====================== */
 
-const hemiLight = new THREE.HemisphereLight(0xffffff, 0x444444, 1.2);
-scene.add(hemiLight);
+scene.add(new THREE.HemisphereLight(0xffffff, 0x444444, 1.2));
 
 const dirLight = new THREE.DirectionalLight(0xffffff, 1.5);
 dirLight.position.set(5, 10, 7.5);
 scene.add(dirLight);
 
-/* ============================= */
-/*  CONTROLS                     */
-/* ============================= */
+/* ====================== */
+/* CONTROLS */
+/* ====================== */
 
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
 
-/* ============================= */
-/*  LOAD MODEL                   */
-/* ============================= */
+/* ====================== */
+/* LOAD MODEL */
+/* ====================== */
 
 const loader = new GLTFLoader();
 let mixer;
@@ -68,7 +68,7 @@ loader.load(
     const model = gltf.scene;
     scene.add(model);
 
-    /* === AUTO CENTER === */
+    // Centering
     const box = new THREE.Box3().setFromObject(model);
     const center = box.getCenter(new THREE.Vector3());
     const size = box.getSize(new THREE.Vector3());
@@ -78,4 +78,56 @@ loader.load(
     const maxDim = Math.max(size.x, size.y, size.z);
     const fov = camera.fov * (Math.PI / 180);
     let cameraZ = Math.abs(maxDim / 2 / Math.tan(fov / 2));
-    cameraZ *= 1.5;*
+    cameraZ *= 1.6;
+
+    camera.position.set(0, maxDim * 0.5, cameraZ);
+    camera.lookAt(0, 0, 0);
+
+    controls.target.set(0, 0, 0);
+    controls.update();
+
+    // Animations
+    if (gltf.animations && gltf.animations.length > 0) {
+      mixer = new THREE.AnimationMixer(model);
+      gltf.animations.forEach((clip) => {
+        mixer.clipAction(clip).play();
+      });
+    }
+  },
+  undefined,
+  (error) => {
+    console.error(error);
+  }
+);
+
+/* ====================== */
+/* LOOP */
+/* ====================== */
+
+const clock = new THREE.Clock();
+
+function animate() {
+  requestAnimationFrame(animate);
+
+  if (mixer) mixer.update(clock.getDelta());
+
+  controls.update();
+  renderer.render(scene, camera);
+}
+
+animate();
+
+/* ====================== */
+/* RESIZE */
+/* ====================== */
+
+window.addEventListener("resize", () => {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+});
+
+</script>
+
+</body>
+</html>
