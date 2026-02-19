@@ -4,88 +4,93 @@
 <meta charset="UTF-8">
 <title>NPC Avatar</title>
 <style>
-body { margin:0; overflow:hidden; background:#000; }
+  body { margin:0; overflow:hidden; background:#000; }
 </style>
 </head>
 <body>
 
 <script type="module">
 
-import * as THREE from "https://unpkg.com/three@0.161.0/build/three.module.js";
-import { OrbitControls } from "https://unpkg.com/three@0.161.0/examples/jsm/controls/OrbitControls.js";
-import { GLTFLoader } from "https://unpkg.com/three@0.161.0/examples/jsm/loaders/GLTFLoader.js";
+// ✅ VERSION COHÉRENTE CDN
+import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.161.0/build/three.module.js";
+import { OrbitControls } from "https://cdn.jsdelivr.net/npm/three@0.161.0/examples/jsm/controls/OrbitControls.js";
+import { GLTFLoader } from "https://cdn.jsdelivr.net/npm/three@0.161.0/examples/jsm/loaders/GLTFLoader.js";
 
-const scene = new THREE.Scene();
+let scene = new THREE.Scene();
 
-const camera = new THREE.PerspectiveCamera(
-  35,
+let camera = new THREE.PerspectiveCamera(
+  45,
   window.innerWidth / window.innerHeight,
   0.1,
   1000
 );
 
-const renderer = new THREE.WebGLRenderer({ antialias: true });
+let renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.setPixelRatio(window.devicePixelRatio);
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 document.body.appendChild(renderer.domElement);
 
-const controls = new OrbitControls(camera, renderer.domElement);
+// Controls
+let controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
 controls.enablePan = false;
 
+// Lights
 scene.add(new THREE.HemisphereLight(0xffffff, 0x444444, 1.2));
+let dir = new THREE.DirectionalLight(0xffffff, 1.5);
+dir.position.set(5, 10, 5);
+scene.add(dir);
 
-const dirLight = new THREE.DirectionalLight(0xffffff, 1.5);
-dirLight.position.set(3, 5, 5);
-scene.add(dirLight);
+// Animation
+let mixer;
+let clock = new THREE.Clock();
 
-let mixer = null;
-const clock = new THREE.Clock();
+let loader = new GLTFLoader();
+loader.load("CombatCharacter.glb", function(gltf) {
 
-const loader = new GLTFLoader();
+  const model = gltf.scene;
+  scene.add(model);
 
-loader.load("CombatCharacter.glb", function(gltf){
+  // 🔹 Centrage
+  const box = new THREE.Box3().setFromObject(model);
+  const size = box.getSize(new THREE.Vector3());
+  const center = box.getCenter(new THREE.Vector3());
 
-    const model = gltf.scene;
-    scene.add(model);
+  model.position.sub(center);
 
-    // Centrage
-    const box = new THREE.Box3().setFromObject(model);
-    const size = box.getSize(new THREE.Vector3());
-    const center = box.getCenter(new THREE.Vector3());
+  // 🔹 Placement caméra
+  const maxDim = Math.max(size.x, size.y, size.z);
+  const fov = camera.fov * (Math.PI / 180);
+  let cameraZ = Math.abs(maxDim / 2 / Math.tan(fov / 2));
 
-    model.position.sub(center);
+  camera.position.set(0, size.y * 0.6, cameraZ * 1.4);
+  controls.target.set(0, size.y * 0.6, 0);
+  controls.update();
 
-    // Placement caméra
-    const maxDim = Math.max(size.x, size.y, size.z);
-    const fov = camera.fov * (Math.PI / 180);
-    const cameraZ = Math.abs(maxDim / 2 / Math.tan(fov / 2));
-
-    camera.position.set(0, size.y * 0.6, cameraZ * 1.4);
-    controls.target.set(0, size.y * 0.6, 0);
-    controls.update();
-
-    // Animation si présente
-    if (gltf.animations && gltf.animations.length > 0) {
-        mixer = new THREE.AnimationMixer(model);
-        const action = mixer.clipAction(gltf.animations[0]);
-        action.play();
-    }
+  // 🔹 Animation si existante
+  if (gltf.animations && gltf.animations.length > 0) {
+    mixer = new THREE.AnimationMixer(model);
+    mixer.clipAction(gltf.animations[0]).play();
+  }
 
 });
 
-window.addEventListener("resize", function(){
-    camera.aspect = window.innerWidth / window.innerHeight;
-    camera.updateProjectionMatrix();
-    renderer.setSize(window.innerWidth, window.innerHeight);
+// Resize
+window.addEventListener("resize", function() {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
 });
 
-function animate(){
-    requestAnimationFrame(animate);
-    if (mixer) mixer.update(clock.getDelta());
-    controls.update();
-    renderer.render(scene, camera);
+// Loop
+function animate() {
+  requestAnimationFrame(animate);
+
+  if (mixer) mixer.update(clock.getDelta());
+
+  controls.update();
+  renderer.render(scene, camera);
 }
 
 animate();
