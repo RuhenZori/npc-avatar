@@ -6,24 +6,35 @@
 <style>
   body { margin:0; overflow:hidden; background:#000; }
 </style>
+
+<!-- Import map officiel -->
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.161.0/build/three.module.js",
+    "three/examples/jsm/": "https://cdn.jsdelivr.net/npm/three@0.161.0/examples/jsm/"
+  }
+}
+</script>
+
 </head>
 <body>
 
-<script src="https://cdn.jsdelivr.net/npm/three@0.161.0/build/three.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/three@0.161.0/examples/js/controls/OrbitControls.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/three@0.161.0/examples/js/loaders/GLTFLoader.js"></script>
+<script type="module">
 
-<script>
+import * as THREE from "three";
+import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
+import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 
 let scene = new THREE.Scene();
 let camera = new THREE.PerspectiveCamera(35, window.innerWidth/window.innerHeight, 0.1, 1000);
 let renderer = new THREE.WebGLRenderer({ antialias:true });
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.setPixelRatio(window.devicePixelRatio);
-renderer.outputEncoding = THREE.sRGBEncoding;
+renderer.outputColorSpace = THREE.SRGBColorSpace;
 document.body.appendChild(renderer.domElement);
 
-let controls = new THREE.OrbitControls(camera, renderer.domElement);
+let controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
 controls.enablePan = false;
 
@@ -34,9 +45,9 @@ scene.add(dir);
 
 let mixer;
 let clock = new THREE.Clock();
-let loader = new THREE.GLTFLoader();
+let loader = new GLTFLoader();
 
-loader.load("CombatCharacter.glb", function(gltf){
+loader.load("./CombatCharacter.glb", (gltf)=>{
 
     const model = gltf.scene;
     scene.add(model);
@@ -62,7 +73,7 @@ loader.load("CombatCharacter.glb", function(gltf){
 
 });
 
-window.addEventListener("resize", function(){
+window.addEventListener("resize", ()=>{
     camera.aspect = window.innerWidth/window.innerHeight;
     camera.updateProjectionMatrix();
     renderer.setSize(window.innerWidth,window.innerHeight);
@@ -77,6 +88,6 @@ function animate(){
 animate();
 
 </script>
+
 </body>
 </html>
-
