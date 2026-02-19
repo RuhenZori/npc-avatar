@@ -4,85 +4,78 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>GLB Viewer</title>
+
 <style>
-  body { margin: 0; overflow: hidden; background: #111; }
-  canvas { display: block; }
+body { margin:0; overflow:hidden; background:#111; }
+canvas { display:block; }
 </style>
+
+<!-- IMPORT MAP -->
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+
 </head>
 <body>
 
 <script type="module">
 
-import * as THREE from "https://unpkg.com/three@0.160.0/build/three.module.js?module";
-import { GLTFLoader } from "https://unpkg.com/three@0.160.0/examples/jsm/loaders/GLTFLoader.js?module";
-import { OrbitControls } from "https://unpkg.com/three@0.160.0/examples/jsm/controls/OrbitControls.js?module";
-
-
+import * as THREE from "three";
+import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
+import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x111111);
 
-const camera = new THREE.PerspectiveCamera(
-  45,
-  window.innerWidth / window.innerHeight,
-  0.1,
-  10000
-);
+const camera = new THREE.PerspectiveCamera(45, innerWidth/innerHeight, 0.1, 10000);
 
-const renderer = new THREE.WebGLRenderer({ antialias: true });
-renderer.setSize(window.innerWidth, window.innerHeight);
+const renderer = new THREE.WebGLRenderer({ antialias:true });
+renderer.setSize(innerWidth, innerHeight);
 renderer.outputColorSpace = THREE.SRGBColorSpace;
-renderer.physicallyCorrectLights = true;
 document.body.appendChild(renderer.domElement);
 
-/* LIGHTING */
-scene.add(new THREE.HemisphereLight(0xffffff, 0x444444, 1.2));
+scene.add(new THREE.HemisphereLight(0xffffff,0x444444,1.2));
 
-const dirLight = new THREE.DirectionalLight(0xffffff, 1.5);
-dirLight.position.set(5, 10, 7.5);
+const dirLight = new THREE.DirectionalLight(0xffffff,1.5);
+dirLight.position.set(5,10,7.5);
 scene.add(dirLight);
 
-/* CONTROLS */
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
 
-/* LOADER */
 const loader = new GLTFLoader();
 let mixer;
 
-loader.load("./arknights_endfield_-snowshine-.glb", (gltf) => {
+loader.load("./arknights_endfield_-snowshine-.glb", (gltf)=>{
 
   const model = gltf.scene;
   scene.add(model);
 
-  // Update matrices
-  model.updateWorldMatrix(true, true);
+  model.updateWorldMatrix(true,true);
 
-  // Compute bounding sphere (robust)
   const box = new THREE.Box3().setFromObject(model);
   const sphere = box.getBoundingSphere(new THREE.Sphere());
 
+  model.position.sub(sphere.center);
+
   const radius = sphere.radius;
-  const center = sphere.center;
+  const fov = camera.fov * (Math.PI/180);
+  const distance = radius / Math.sin(fov/2);
 
-  // Center model
-  model.position.sub(center);
+  camera.position.set(0, radius*0.5, distance*1.3);
+  camera.lookAt(0,0,0);
 
-  // Proper camera distance
-  const fov = camera.fov * (Math.PI / 180);
-  const distance = radius / Math.sin(fov / 2);
-
-  camera.position.set(0, radius * 0.5, distance * 1.3);
-  camera.lookAt(0, 0, 0);
-
-  controls.target.set(0, 0, 0);
-  controls.maxDistance = distance * 5;
+  controls.target.set(0,0,0);
   controls.update();
 
-  // Animations
-  if (gltf.animations.length > 0) {
+  if (gltf.animations.length > 0){
     mixer = new THREE.AnimationMixer(model);
-    gltf.animations.forEach((clip) => {
+    gltf.animations.forEach((clip)=>{
       mixer.clipAction(clip).play();
     });
   }
@@ -91,21 +84,18 @@ loader.load("./arknights_endfield_-snowshine-.glb", (gltf) => {
 
 const clock = new THREE.Clock();
 
-function animate() {
+function animate(){
   requestAnimationFrame(animate);
-
-  if (mixer) mixer.update(clock.getDelta());
-
+  if(mixer) mixer.update(clock.getDelta());
   controls.update();
-  renderer.render(scene, camera);
+  renderer.render(scene,camera);
 }
-
 animate();
 
-window.addEventListener("resize", () => {
-  camera.aspect = window.innerWidth / window.innerHeight;
+addEventListener("resize",()=>{
+  camera.aspect = innerWidth/innerHeight;
   camera.updateProjectionMatrix();
-  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.setSize(innerWidth,innerHeight);
 });
 
 </script>
